@@ -1,25 +1,40 @@
 const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const todoRoutes = require('./routes/todos');
-
 const app = express();
+const PORT = process.env.PORT || 3000;
 
-// Middleware
-app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../public')));
 
-// Routes
+// Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Todo API is running' });
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-app.use('/api/todos', todoRoutes);
-
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ success: false, error: 'Route not found' });
+// API routes
+app.get('/api/users', (req, res) => {
+  res.json({ users: [] });
 });
+
+app.post('/api/users', (req, res) => {
+  const { name, email } = req.body;
+  
+  if (!name || !email) {
+    return res.status(400).json({ error: 'Name and email are required' });
+  }
+  
+  res.status(201).json({ id: 1, name, email });
+});
+
+// Error handling
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Internal server error' });
+});
+
+// Only start server if not in test mode
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
 
 module.exports = app;
